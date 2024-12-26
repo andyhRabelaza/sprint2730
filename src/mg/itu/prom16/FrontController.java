@@ -1,5 +1,4 @@
 package mg.itu.prom16;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -7,6 +6,22 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+import mg.itu.prom16.models.ModelAndView;
+
+public class FrontController extends HttpServlet {
+    private final List<String> listeControllers = new ArrayList<>();
+
+    protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
+    private final Set<String> verifiedClasses = new HashSet<>();
+    HashMap<String, Mapping> urlMaping = new HashMap<>();
 
 public void init(ServletConfig config)throws ServletException{
 
@@ -26,7 +41,6 @@ public class FrontController extends HttpServlet {
         super.init(config);
         scanControllers(config);
     }
-
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException, NoSuchMethodException, SecurityException, ClassNotFoundException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -37,6 +51,8 @@ public class FrontController extends HttpServlet {
             out.println("<title>FrontController</title>");
             out.println("</head>");
             out.println("<body>");
+            StringBuffer requestURL = request.getRequestURL();
+            String[] requestUrlSplitted = requestURL.toString().split("/");
 
             StringBuffer requestURL = request.getRequestURL();
             String[] requestUrlSplitted = requestURL.toString().split("/");
@@ -53,6 +69,25 @@ public class FrontController extends HttpServlet {
                 Method method = clazz.getMethod(mapping.getMethodeName());
                 Object ob = clazz.getDeclaredConstructor().newInstance();
                 Object returnValue = method.invoke(ob);
+                if (returnValue instanceof String) {
+                    out.println("La valeur de retour est " + (String) returnValue);
+                } else if (returnValue instanceof ModelAndView) {
+                    ModelAndView modelAndView = (ModelAndView) returnValue;
+                    for (Map.Entry<String, Object> entry : modelAndView.getData().entrySet()) {
+                        request.setAttribute(entry.getKey(), entry.getValue());
+                    }
+                    RequestDispatcher dispatcher = request.getRequestDispatcher(modelAndView.getUrl());
+                    dispatcher.forward(request, response);
+                } else {
+                    out.println("Type de données non reconnu");
+                }
+            }
+
+            out.println("</body>");
+            out.println("</html>");
+            out.close();
+        }
+    }
                 String stringValue = (String) returnValue;
                 out.println("La valeur de retour est " + stringValue);
 
