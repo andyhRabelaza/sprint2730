@@ -1,5 +1,4 @@
 package mg.itu.prom16;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -7,6 +6,28 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+import mg.itu.prom16.models.ModelAndView;
+
+public class FrontController extends HttpServlet {
+    private final List<String> listeControllers = new ArrayList<>();
+
+    protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
+    private final Set<String> verifiedClasses = new HashSet<>();
+    HashMap<String, Mapping> urlMaping = new HashMap<>();
+
+
+public void init(ServletConfig config)throws ServletException{
+
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,10 +63,16 @@ public class FrontController extends HttpServlet {
             out.println("<title>FrontController</title>");
             out.println("</head>");
             out.println("<body>");
+
+
+            out.println("<h1>URL actuelle :</h1>");
+            out.println("<p>" + request.getRequestURL() + "</p>");
+
+
+
             StringBuffer requestURL = request.getRequestURL();
             String[] requestUrlSplitted = requestURL.toString().split("/");
             String controllerSearched = requestUrlSplitted[requestUrlSplitted.length - 1];
-
             out.println("<h2>Classe et methode associe a l'url :</h2>");
             if (error != "") {
                 out.println(error);
@@ -57,6 +84,7 @@ public class FrontController extends HttpServlet {
                 Method method = clazz.getMethod(mapping.getMethodeName());
                 Object ob = clazz.getDeclaredConstructor().newInstance();
                 Object returnValue = method.invoke(ob);
+
                 if (returnValue instanceof String) {
                     out.println("La valeur de retour est " + (String) returnValue);
                 } else if (returnValue instanceof ModelAndView) {
@@ -69,7 +97,22 @@ public class FrontController extends HttpServlet {
                 } else {
                     out.println("Type de données non reconnu");
                 }
+
             }out.println("</body>");out.println("</html>");out.close();
+
+            }
+
+            out.println("</body>");
+            out.println("</html>");
+            out.close();
+        }
+    }
+
+                String stringValue = (String) returnValue;
+                out.println("La valeur de retour est " + stringValue);
+
+            }
+
 
     }}
 
@@ -77,6 +120,7 @@ public class FrontController extends HttpServlet {
         System.out.println("Scanning package: " + controllerPackage);
 
         // Scanner les classes du package donné dans WEB-INF/classes
+
 
     private void scanControllers(ServletConfig config) {
 
@@ -147,7 +191,15 @@ public class FrontController extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (Exception e) {
+
             e.printStackTrace();
+
+
+            e.printStackTrace();
+
+            // TODO: handle exception
+
+
         }
     }
 
@@ -157,6 +209,13 @@ public class FrontController extends HttpServlet {
             processRequest(request, response);
         } catch (Exception e) {
             e.printStackTrace();
+
+
+            processRequest(request, response);
+        } catch (Exception e) {
+            // TODO: handle exception
+
+
         }
     }
 }

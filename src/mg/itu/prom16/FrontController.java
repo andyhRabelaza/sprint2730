@@ -1,5 +1,4 @@
 package mg.itu.prom16;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -7,6 +6,27 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+import mg.itu.prom16.models.ModelAndView;
+
+public class FrontController extends HttpServlet {
+    private final List<String> listeControllers = new ArrayList<>();
+
+    protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
+    private final Set<String> verifiedClasses = new HashSet<>();
+    HashMap<String, Mapping> urlMaping = new HashMap<>();
+
+public void init(ServletConfig config)throws ServletException{
+
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,8 +53,14 @@ public class FrontController extends HttpServlet {
         }
     }
 
+
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)throws ServletException, IOException, NoSuchMethodException, SecurityException, ClassNotFoundException,
         InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+
+    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException, NoSuchMethodException, SecurityException, ClassNotFoundException,
+            InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+
         response.setContentType("text/html;charset=UTF-8");
         try (PrintWriter out = response.getWriter()) {
             out.println("<html>");
@@ -42,6 +68,11 @@ public class FrontController extends HttpServlet {
             out.println("<title>FrontController</title>");
             out.println("</head>");
             out.println("<body>");
+
+            StringBuffer requestURL = request.getRequestURL();
+            String[] requestUrlSplitted = requestURL.toString().split("/");
+
+
             StringBuffer requestURL = request.getRequestURL();
             String[] requestUrlSplitted = requestURL.toString().split("/");
             String controllerSearched = requestUrlSplitted[requestUrlSplitted.length - 1];
@@ -69,7 +100,21 @@ public class FrontController extends HttpServlet {
                 } else {
                     out.println("Type de données non reconnu");
                 }
+
             }out.println("</body>");out.println("</html>");out.close();
+=
+            }
+
+            out.println("</body>");
+            out.println("</html>");
+            out.close();
+        }
+    }
+                String stringValue = (String) returnValue;
+                out.println("La valeur de retour est " + stringValue);
+
+            }
+
 
     }}
 
