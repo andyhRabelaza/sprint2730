@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Field;
+
+import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,6 +31,18 @@ public class FrontController extends HttpServlet {
     private final List<String> listeControllers = new ArrayList<>();
     private final Set<String> verifiedClasses = new HashSet<>();
     HashMap<String, Mapping> urlMaping = new HashMap<>();
+
+
+
+    
+    public static Object convertParameter(String value, Class<?> type) {
+
+
+    protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
+    private final List<String> listeControllers = new ArrayList<>();
+    private final Set<String> verifiedClasses = new HashSet<>();
+    HashMap<String, Mapping> urlMaping = new HashMap<>();
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
@@ -45,6 +59,7 @@ public class FrontController extends HttpServlet {
             out.println("<title>FrontController</title>");
             out.println("</head>");
             out.println("<body>");
+
             StringBuffer requestURL = request.getRequestURL();
             String[] requestUrlSplitted = requestURL.toString().split("/");
             String controllerSearched = requestUrlSplitted[requestUrlSplitted.length - 1];
@@ -55,6 +70,7 @@ public class FrontController extends HttpServlet {
                 Mapping mapping = urlMaping.get(controllerSearched);
                 Class<?> clazz = Class.forName(mapping.getClassName());
                 Method method = null;
+
                 // Find the method that matches the request type (GET or POST)
                 for (Method m : clazz.getDeclaredMethods()) {
                     if (m.getName().equals(mapping.getMethodeName())) {
@@ -104,6 +120,37 @@ public class FrontController extends HttpServlet {
                     } else {
                         out.println("Type de données non reconnu");
                     }
+                if (returnValue instanceof String) {
+                    out.println("La valeur de retour est " + (String) returnValue);
+    private Object[] getMethodParameters(Method method, HttpServletRequest request)
+  
+                }else if(returnValue instanceof ModelAndView)
+
+    {
+        ModelAndView modelAndView = (ModelAndView) returnValue;
+        for (Map.Entry<String, Object> entry : modelAndView.getData().entrySet()) {
+            request.setAttribute(entry.getKey(), entry.getValue());
+        }
+        RequestDispatcher dispatcher = request.getRequestDispatcher(modelAndView.getUrl());
+        dispatcher.forward(request, response);
+    }else
+    {
+        out.println("Type de données non reconnu");
+    }}out.println("</body>");out.println("</html>");out.close();}catch(
+    Exception e){
+            out.println(e.getMessage());
+        }
+    }
+
+    private void scanControllers(ServletConfig config) {
+        String controllerPackage = config.getInitParameter("controller-package");
+        System.out.println("Scanning package: " + controllerPackage);
+        // Scanner les classes du package donné dans WEB-INF/classes
+
+    private void scanControllers(ServletConfig config) throws Exception {
+
+                } else {
+                    out.println("Type de données non reconnu");
                 }
             } 
             out.println("</body>");
@@ -124,6 +171,9 @@ public class FrontController extends HttpServlet {
                 scanDirectory(directory, controllerPackage);
             } else {
                 throw new Exception("Le repertoire n'existe pas: " + directory.getAbsolutePath());
+                System.out.println("Le repertoire n'existe pas: " + directory.getAbsolutePath());
+
+                throw new Exception("Directory does not exist: " + directory.getAbsolutePath());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -131,6 +181,12 @@ public class FrontController extends HttpServlet {
     }
     private void scanDirectory(File directory, String packageName) throws Exception {
         System.out.println("Scanning directory: " + directory.getAbsolutePath());
+
+        for (File file : directory.listFiles()) {
+            System.out.println("Processing file: " + file.getName());
+
+
+
         for (File file : directory.listFiles()) {
             System.out.println("Processing file: " + file.getName());
             if (file.isDirectory()) {
@@ -162,7 +218,51 @@ public class FrontController extends HttpServlet {
                                 } else {
                                     urlMaping.put(valeur, map);
                                 }
+
                             }
+
+}
+
+        try {
+            if (directory.listFiles() != null) {
+
+                for (File file : directory.listFiles()) {
+                    System.out.println("Processing file: " + file.getName());
+
+                    if (file.isDirectory()) {
+                        scanDirectory(file, packageName + "." + file.getName());
+                    } else if (file.getName().endsWith(".class")) {
+                        String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
+                        try {
+                            Class<?> clazz = Class.forName(className);
+                            if (clazz.isAnnotationPresent(AnnotationController.class)
+                                    && !verifiedClasses.contains(clazz.getName())) {
+                                AnnotationController annotation = clazz.getAnnotation(AnnotationController.class);
+                                listeControllers.add(clazz.getName() + " (" + annotation.value() + ")");
+                                verifiedClasses.add(clazz.getName());
+                                Method[] methods = clazz.getMethods();
+                                for (Method m : methods) {
+                                    if (m.isAnnotationPresent(AnnotationGet.class)) {
+                                        Mapping mapping = new Mapping(className, m.getName());
+                                        AnnotationGet AnnotationGet = m.getAnnotation(AnnotationGet.class);
+                                        String annotationValue = AnnotationGet.value();
+                                        if (urlMaping.containsKey(annotationValue)) {
+                                            throw new Exception("double url" + annotationValue);
+                                        } else {
+                                            urlMaping.put(annotationValue, mapping);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        System.out.println("Added controller: " + clazz.getName());
+                    }
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+                        } catch (Exception e) {
+                            throw e;
+
                         }
                         System.out.println("Added controller: " + clazz.getName());
                     }
@@ -172,6 +272,23 @@ public class FrontController extends HttpServlet {
             }
         }
     }
+ 
+    public static Object convertParameter(String value, Class<?> type) {
+        if (value == null) {
+            return null;
+        }
+        if (type == String.class) {
+            return value;
+        } else if (type == int.class || type == Integer.class) {
+            return Integer.parseInt(value);
+        } else if (type == long.class || type == Long.class) {
+            return Long.parseLong(value);
+        } else if (type == boolean.class || type == Boolean.class) {
+            return Boolean.parseBoolean(value);
+        }
+        // Ajoutez d'autres conversions nécessaires ici
+        return null;
+
     public static Object convertParameter(String value, Class<?> type) {
         if (value == null) {
             return null;
@@ -188,6 +305,81 @@ public class FrontController extends HttpServlet {
         // Ajoutez d'autres conversions nécessaires ici
         return null;
     }
+    }
+
+    private Object[] getMethodParameters(Method method, HttpServletRequest request) throws Exception {
+        Parameter[] parameters = method.getParameters();
+        Object[] parameterValues = new Object[parameters.length];
+
+        for (int i = 0; i < parameters.length; i++) {
+            if (!parameters[i].isAnnotationPresent(Param.class)
+                    && !parameters[i].isAnnotationPresent(ParamObject.class)
+                    && !parameters[i].getType().equals(CustomSession.class)) {
+                throw new Exception("ETU002380: les attributs doivent etre annoter par Param ou ParamObject");
+            }
+            if (parameters[i].getType().equals(CustomSession.class)) {
+                CustomSession session = new CustomSession(request.getSession());
+                parameterValues[i] = session;
+            }
+            if (parameters[i].isAnnotationPresent(Param.class)) {
+                Param param = parameters[i].getAnnotation(Param.class);
+                String paramValue = request.getParameter(param.value());
+             else if (parameters[i].isAnnotationPresent(ParamObject.class)) {
+  
+                parameterValues[i] = convertParameter(paramValue, parameters[i].getType()); // Assuming all parameters
+                                                                                            // are strings for
+                                                                                            // simplicity
+            }
+            // Vérifie si le paramètre est annoté avec @RequestObject
+            else if (parameters[i].isAnnotationPresent(ParamObject.class)) {
+                Class<?> parameterType = parameters[i].getType(); // Récupère le type du paramètre (le type de l'objet à
+                                                                  // créer)
+                Object parameterObject = parameterType.getDeclaredConstructor().newInstance(); // Crée une nouvelle
+                                                                                               // instance de cet objet
+                // Parcourt tous les champs (fields) de l'objet
+                for (Field field : parameterType.getDeclaredFields()) {
+                    RequestParam param = field.getAnnotation(RequestParam.class);
+                    String fieldName = field.getName(); // Récupère le nom du champ
+                    // parameterType.getSimpleName().toLowerCase() + "." + 
+                    String paramName = (param != null) ? param.value() : fieldName; // Forme le nom du
+                                                                                                      // paramètre de la
+                                                                                                      // requête attendu
+                    String paramValue = request.getParameter(paramName); // Récupère la valeur du paramètre de la
+                                                                         // requête
+                    // Vérifie si la valeur du paramètre n'est pas null (si elle est trouvée dans la
+                    // requête)
+                    if (paramValue != null) {
+                        Object convertedValue = convertParameter(paramValue, field.getType()); // Convertit la valeur de
+                                                                                               // la requête en type de
+                                                                                               // champ requis
+                        // Construit le nom du setter
+                        String setterName = "set" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
+                        Method setter = parameterType.getMethod(setterName, field.getType()); // Récupère la méthode
+                                                                                              // setter correspondante
+                        setter.invoke(parameterObject, convertedValue); // Appelle le setter pour définir la valeur
+                                                                        // convertie dans le champ de l'objet
+                    }
+                }
+                parameterValues[i] = parameterObject; // Stocke l'objet créé dans le tableau des arguments
+            } else {
+            }
+        }
+        return parameterValues;
+    }
+
+    public void verifieCustomSession(Object o, HttpServletRequest request) throws Exception {
+        Class<?> c = o.getClass();
+        Field[] fields = c.getDeclaredFields();
+        for (Field field : fields) {
+            if (field.getType().equals(CustomSession.class)) {
+                Method sessionMethod = c.getMethod("setSession", CustomSession.class);
+                CustomSession session = new CustomSession(request.getSession());
+                sessionMethod.invoke(o, session);
+                return;
+            }
+        }
+    }
+
     private Object[] getMethodParameters(Method method, HttpServletRequest request) throws Exception {
         Parameter[] parameters = method.getParameters();
         Object[] parameterValues = new Object[parameters.length];
@@ -259,6 +451,11 @@ public class FrontController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         try {
             processRequest(request, response);
         } catch (Exception e) {
@@ -274,4 +471,5 @@ public class FrontController extends HttpServlet {
             e.printStackTrace();
         }
     }
+}
 }
