@@ -1,10 +1,9 @@
-
-package mg.itu.prom16;
+package mg.itu.prom16.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
-public @interface AnnotationGet {
-    String value();
+public @interface AnnotationController {
+    String value() default "";
 }
