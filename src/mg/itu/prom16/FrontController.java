@@ -19,6 +19,7 @@ import java.util.Set;
 
 import com.google.gson.Gson;
 
+import com.google.gson.Gson;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.*;
@@ -46,8 +47,21 @@ public class FrontController extends HttpServlet {
     HashMap<String, Mapping> urlMaping = new HashMap<>();
     String error = "";
 
+protected void processRequest(HttpServletRequest request, HttpServletResponse re
+
+
+    protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
+
+    private final List<String> listeControllers = new ArrayList<>();
+    private final Set<String> verifiedClasses = new HashSet<>();
+    HashMap<String, Mapping> urlMaping = new HashMap<>();
+    String error = "";
+
     @Override
     public void init(ServletConfig config) throws ServletException {
+ protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
         super.init(config);
         scanControllers(config);
     }
@@ -60,9 +74,12 @@ public class FrontController extends HttpServlet {
         String errorMessage = "Une erreur inattendue est survenue.";
         String errorDetails = null;
         ValidationsError validationsErrors = new ValidationsError();
+
         try {
             out.println("<html>");
             out.println("<head>");
+ protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
             out.println("<title>FrontController</title>");
             out.println("</head>");
             out.println("<body>");
@@ -98,6 +115,13 @@ public class FrontController extends HttpServlet {
                 }
 
                 for (Method m : clazz.getDeclaredMethods()) {
+protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
+                    out.print("Le verbe HTTP utilisé n'est pas pris en charge pour cette action.");
+
+                }
+
+                for (Method m : clazz.getDeclaredMethods()) {
                     for (VerbAction action : mapping.getVerbActions()) {
                         if (m.getName().equals(action.getMethodeName())
                                 && action.getVerb().equalsIgnoreCase(request.getMethod())) {
@@ -108,6 +132,17 @@ public class FrontController extends HttpServlet {
                     if (method != null) {
                         break;
                     }
+                }
+
+                if (method == null) {
+                    errorCode = 404;
+                    errorMessage = "Non trouvé";
+                    errorDetails = "Aucune méthode correspondante trouvée.";
+                    displayErrorPage(out, errorCode, errorMessage, errorDetails);
+                    return;
+                }
+ protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
 
                 }
 
@@ -142,7 +177,17 @@ public class FrontController extends HttpServlet {
                         return;
                     }
                 } else {
+ 
                     if (returnValue instanceof String) {
+                        out.println("La valeur de retour est " + (String) returnValue);
+                    } else if (returnValue instanceof ModelAndView) {
+
+
+ protected void processRequest(HttpServletRequest request, HttpServletResponse re
+                }else{
+                    if (returnValue instanceof String) {
+protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
                         out.println("La valeur de retour est " + (String) returnValue);
                     } else if (returnValue instanceof ModelAndView) {
                         ModelAndView modelAndView = (ModelAndView) returnValue;
@@ -158,9 +203,40 @@ public class FrontController extends HttpServlet {
                         displayErrorPage(out, errorCode, errorMessage, errorDetails);
                         return;
                     }
-                }
+}
             }
 
+
+                if (returnValue instanceof String) {
+                    out.println("La valeur de retour est " + (String) returnValue);
+    private Object[] getMethodParameters(Method method, HttpServletRequest request)
+  
+                        ModelAndView modelAndView = (ModelAndView) returnValue;
+                        for (Map.Entry<String, Object> entry : modelAndView.getData().entrySet()) {
+                            request.setAttribute(entry.getKey(), entry.getValue());
+                        }
+                        RequestDispatcher dispatcher = request.getRequestDispatcher(modelAndView.getUrl());
+                        dispatcher.forward(request, response);
+                    }else
+
+    {
+        out.println("Type de données non reconnu");
+    }}}out.println("</body>");out.println("</html>");out.close();}catch(
+    Exception e)
+    {
+        out.println(e.getMessage());
+    }
+    }
+
+ private void scanDirectory(File directory, String packageName) throws Exception
+
+
+                } else {
+                    out.println("Type de données non reconnu");
+                }
+            }
+ protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
             out.println("</body>");
             out.println("</html>");
             out.close();
@@ -177,6 +253,15 @@ public class FrontController extends HttpServlet {
             }
         }
     }
+
+            errorCode = 500;
+            errorMessage = "Erreur interne du serveur";
+            errorDetails = e.getMessage();
+            displayErrorPage(out, errorCode, errorMessage, errorDetails);
+        }
+    }
+ public void verifieCustomSession(Object o, HttpServletRequest request) throws Ex
+  
 
     private void scanControllers(ServletConfig config) {
         String controllerPackage = config.getInitParameter("controller-package");
@@ -238,12 +323,25 @@ public class FrontController extends HttpServlet {
                                     urlMaping.put(url, map);
                                 }
 
+
+
+                            }
+
+}
+
+        try {
+            if (directory.listFiles() != null) {
+
                             } else {
                                 throw new Exception(
                                         "il faut avoir une annotation url dans le controlleur  " + className);
                             }
                         }
                         System.out.println("Added controller: " + clazz.getName());
+
+
+                            else if (parameters[i].isAnnotationPresent(ParamObject.class)) {
+
                     }
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
@@ -271,6 +369,7 @@ public class FrontController extends HttpServlet {
 
     private Object[] getMethodParameters(Method method, HttpServletRequest request, ValidationsError validationsError)
             throws Exception {
+    private Object[] getMethodParameters(Method method, HttpServletRequest request) throws Exception {
         Parameter[] parameters = method.getParameters();
         Object[] parameterValues = new Object[parameters.length];
 
@@ -361,6 +460,7 @@ public class FrontController extends HttpServlet {
         }
     }
 
+
     public void verifieCustomSession(Object o, HttpServletRequest request) throws Exception {
         Class<?> c = o.getClass();
         Field[] fields = c.getDeclaredFields();
@@ -394,6 +494,31 @@ public class FrontController extends HttpServlet {
             Required required = field.getAnnotation(Required.class);
             if (paramValue.isEmpty()) {
                 validationsError.addError(field.getName(), required.message());
+    private void displayErrorPage(PrintWriter out, int errorCode, String errorMessage, String errorDetails) {
+        out.println("<html>");
+        out.println("<head><title>Erreur " + errorCode + "</title></head>");
+        out.println("<body>");
+        out.println("<div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto;'>");
+        out.println("<h1 style='color: #e74c3c;'>" + errorMessage + "</h1>");
+        out.println("<p><strong>Code d'erreur :</strong> " + errorCode + "</p>");
+        out.println("<p>" + errorDetails + "</p>");
+        out.println("<a href='/' style='color: #3498db;'>Retour à l'accueil</a>");
+        out.println("</div>");
+        out.println("</body>");
+        out.println("</html>");
+
+    private Object[] getMethodParameters(Method method, HttpServletRequest request) throws Exception {
+        Parameter[] parameters = method.getParameters();
+        Object[] parameterValues = new Object[parameters.length];
+        for (int i = 0; i < parameters.length; i++) {
+            if (!parameters[i].isAnnotationPresent(Param.class)
+                    && !parameters[i].isAnnotationPresent(ParamObject.class)
+                    && !parameters[i].getType().equals(CustomSession.class)) {
+                throw new Exception("ETU002380: les attributs doivent etre annoter par Param ou ParamObject");
+            }
+            if (parameters[i].getType().equals(CustomSession.class)) {
+                CustomSession session = new CustomSession(request.getSession());
+                parameterValues[i] = session;
             }
         }
 
@@ -430,6 +555,7 @@ public class FrontController extends HttpServlet {
             }
         }
     }
+
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
