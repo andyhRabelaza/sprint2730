@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Field;
-
-import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,15 +11,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import com.google.gson.Gson;
+
 import com.google.gson.Gson;
 
+import com.google.gson.Gson;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import mg.itu.prom16.annotations.AnnotationController;
 import mg.itu.prom16.annotations.AnnotationGet;
 import mg.itu.prom16.annotations.AnnotationPost;
 import mg.itu.prom16.annotations.Param;
+import mg.itu.prom16.annotations.ParamObject;
 import mg.itu.prom16.annotations.RequestParam;
 import mg.itu.prom16.annotations.RestAPI;
 import mg.itu.prom16.annotations.Url;
@@ -30,8 +30,10 @@ import mg.itu.prom16.util.Mapping;
 import mg.itu.prom16.util.VerbAction;
 
 public class FrontController extends HttpServlet {
- protected void processRequest(HttpServletRequest request, HttpServletResponse response)throws Exception {
     private final List<String> listeControllers = new ArrayList<>();
+    private final Set<String> verifiedClasses = new HashSet<>();
+    HashMap<String, Mapping> urlMaping = new HashMap<>();
+    String error = "";
 
 protected void processRequest(HttpServletRequest request, HttpServletResponse re
 
@@ -44,6 +46,8 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
 
     @Override
     public void init(ServletConfig config) throws ServletException {
+ protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
         super.init(config);
         scanControllers(config);
     }
@@ -53,24 +57,50 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
             throws Exception {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
+        int errorCode = 0; // Code d'erreur par défaut (aucune erreur)
+        String errorMessage = "Une erreur inattendue est survenue.";
+        String errorDetails = null;
         try {
             out.println("<html>");
             out.println("<head>");
+ protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
             out.println("<title>FrontController</title>");
             out.println("</head>");
             out.println("<body>");
             StringBuffer requestURL = request.getRequestURL();
             String[] requestUrlSplitted = requestURL.toString().split("/");
             String controllerSearched = requestUrlSplitted[requestUrlSplitted.length - 1];
+
             out.println("<h2>Classe et methode associe a l'url :</h2>");
-            if (!urlMaping.containsKey(controllerSearched)) {
-                out.println("<p>" + "Aucune methode associee a ce chemin." + "</p>");
+            if (!error.isEmpty()) {
+                errorCode = 400;
+                errorMessage = "Erreur de demande";
+                errorDetails = error;
+                displayErrorPage(out, errorCode, errorMessage, errorDetails);
+                return;
+            } else if (!urlMaping.containsKey(controllerSearched)) {
+                errorCode = 404;
+                errorMessage = "Non trouvé";
+                errorDetails = "Aucune méthode associée au chemin spécifié.";
+                displayErrorPage(out, errorCode, errorMessage, errorDetails);
+                return;
             } else {
                 Mapping mapping = urlMaping.get(controllerSearched);
                 Class<?> clazz = Class.forName(mapping.getClassName());
                 Method method = null;
 
                 if (!mapping.isVerbAction(request.getMethod())) {
+                    errorCode = 405;
+                    errorMessage = "Méthode non autorisée";
+                    errorDetails = "Le verbe HTTP utilisé n'est pas pris en charge pour cette action.";
+                    displayErrorPage(out, errorCode, errorMessage, errorDetails);
+                    return;
+                }
+
+                for (Method m : clazz.getDeclaredMethods()) {
+protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
                     out.print("Le verbe HTTP utilisé n'est pas pris en charge pour cette action.");
                 }
 
@@ -85,6 +115,17 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
                     if (method != null) {
                         break;
                     }
+                }
+
+                if (method == null) {
+                    errorCode = 404;
+                    errorMessage = "Non trouvé";
+                    errorDetails = "Aucune méthode correspondante trouvée.";
+                    displayErrorPage(out, errorCode, errorMessage, errorDetails);
+                    return;
+                }
+ protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
 
                 }
 
@@ -116,9 +157,14 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
                         stringResponse = gson.toJson(modelAndView.getData());
                         out.print(stringResponse);
                     } else {
-                        out.println("Type de données non reconnu");
+                        errorCode = 500;
+                        errorMessage = "Erreur interne du serveur";
+                        errorDetails = "Type de données non reconnu.";
+                        displayErrorPage(out, errorCode, errorMessage, errorDetails);
+                        return;
                     }
                 } else {
+ 
                     if (returnValue instanceof String) {
                         out.println("La valeur de retour est " + (String) returnValue);
                     } else if (returnValue instanceof ModelAndView) {
@@ -126,6 +172,8 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
  protected void processRequest(HttpServletRequest request, HttpServletResponse re
                 }else{
                     if (returnValue instanceof String) {
+protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
                         out.println("La valeur de retour est " + (String) returnValue);
                     } else if (returnValue instanceof ModelAndView) {
                         ModelAndView modelAndView = (ModelAndView) returnValue;
@@ -135,8 +183,13 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
                         RequestDispatcher dispatcher = request.getRequestDispatcher(modelAndView.getUrl());
                         dispatcher.forward(request, response);
                     } else {
-                        out.println("Type de données non reconnu");
+                        errorCode = 500;
+                        errorMessage = "Erreur interne du serveur";
+                        errorDetails = "Type de données non reconnu.";
+                        displayErrorPage(out, errorCode, errorMessage, errorDetails);
+                        return;
                     }
+
                 if (returnValue instanceof String) {
                     out.println("La valeur de retour est " + (String) returnValue);
     private Object[] getMethodParameters(Method method, HttpServletRequest request)
@@ -164,14 +217,21 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
                 } else {
                     out.println("Type de données non reconnu");
                 }
-            } 
+            }
+ protected void processRequest(HttpServletRequest request, HttpServletResponse re
+  
             out.println("</body>");
             out.println("</html>");
             out.close();
-        }catch(Exception e){
-            out.println(e.getMessage());
+        } catch (Exception e) {
+            errorCode = 500;
+            errorMessage = "Erreur interne du serveur";
+            errorDetails = e.getMessage();
+            displayErrorPage(out, errorCode, errorMessage, errorDetails);
         }
     }
+ public void verifieCustomSession(Object o, HttpServletRequest request) throws Ex
+  
     private void scanControllers(ServletConfig config) {
         String controllerPackage = config.getInitParameter("controller-package");
         System.out.println("Scanning package: " + controllerPackage);
@@ -238,6 +298,7 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
                                 }
 
 
+
                             }
 
 }
@@ -251,6 +312,7 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
                             }
                         }
                         System.out.println("Added controller: " + clazz.getName());
+
                             else if (parameters[i].isAnnotationPresent(ParamObject.class)) {
   
                     }
@@ -277,8 +339,6 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
         // Ajoutez d'autres conversions nécessaires ici
         return null;
     }
-    }
-
     private Object[] getMethodParameters(Method method, HttpServletRequest request) throws Exception {
         Parameter[] parameters = method.getParameters();
         Object[] parameterValues = new Object[parameters.length];
@@ -337,7 +397,6 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
         }
         return parameterValues;
     }
-
     public void verifieCustomSession(Object o, HttpServletRequest request) throws Exception {
         Class<?> c = o.getClass();
         Field[] fields = c.getDeclaredFields();
@@ -351,6 +410,19 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
         }
     }
 
+
+    private void displayErrorPage(PrintWriter out, int errorCode, String errorMessage, String errorDetails) {
+        out.println("<html>");
+        out.println("<head><title>Erreur " + errorCode + "</title></head>");
+        out.println("<body>");
+        out.println("<div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto;'>");
+        out.println("<h1 style='color: #e74c3c;'>" + errorMessage + "</h1>");
+        out.println("<p><strong>Code d'erreur :</strong> " + errorCode + "</p>");
+        out.println("<p>" + errorDetails + "</p>");
+        out.println("<a href='/' style='color: #3498db;'>Retour à l'accueil</a>");
+        out.println("</div>");
+        out.println("</body>");
+        out.println("</html>");
 
     private Object[] getMethodParameters(Method method, HttpServletRequest request) throws Exception {
         Parameter[] parameters = method.getParameters();
@@ -420,10 +492,6 @@ protected void processRequest(HttpServletRequest request, HttpServletResponse re
             }
         }
     }
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-
 
 
     @Override
