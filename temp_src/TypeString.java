@@ -4,8 +4,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+
+// Annotation pour le texte
+@Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface RestAPI {
-    
+public @interface TypeString {
+    String message() default "This field must be text";
 }
