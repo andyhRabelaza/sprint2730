@@ -4,8 +4,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+// Annotation pour les valeurs décimales
+@Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface RestAPI {
-    
+public @interface TypeDouble {
+    String message() default "This field must be a decimal";
 }
+
