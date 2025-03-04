@@ -1,3 +1,6 @@
+#!/bin/bash
+
+# Répertoires
 TEMP_SRC="temp_src"
 MY_CLASSES="classes"
 
